@@ -1,0 +1,1 @@
+Generate an OpenAPI specification in YAML format based on requirement details
