@@ -1,0 +1,846 @@
+TECHNICAL API SPECIFICATION TEMPLATE - USER SYS API 
+
+(This is an initial version) 
+
+User System API 
+
+ 
+
+DOCUMENT PURPOSE: 
+
+The purpose of this API is to provide a unified user data management interface that supports CRUD operations for enterprise applications. It enables system components to access and manage user information with persistent storage in a relational database. 
+
+TARGET AUDIENCE:  
+
+Tech Leads, Senior Developers, Solution Architects, DevOps Engineers 
+
+ 
+
+PROJECT METADATA 
+
+Project Name: User Service API for CRUD Operations 
+
+API Version: v1 
+
+Spring Boot Version: 3.3.5 
+
+Java Version: 21 
+
+Build Tool: [X] Maven [ ] Gradle 
+
+Target Environment: Google Cloud Platform (Multi-region) 
+
+Expected Go-Live: Production Ready (Version 1.0.151) 
+
+Technical Lead: Identity Technology Team Lead 
+
+Solution Architect: Enterprise Solutions Architect 
+
+API ENDPOINT ARCHITECTURE 
+
+Context Path: /user-service-api 
+
+DATABASE INTEGRATION 
+
+Database: PostgreSQL 
+
+ 
+
+========================================================================= 
+
+SEGMENT I: FOUNDATION ARCHITECTURE SPECIFICATION 
+
+========================================================================= 
+
+ 
+
+This segment defines the fundamental technical infrastructure, project structure, and cross-cutting concerns that form the backbone of the microservice architecture. 
+
+ 
+
+ 
+
+1.1 PROJECT STRUCTURE & CONFIGURATION 
+
+1.1.1 Maven/Gradle Configuration 
+
+Parent Framework: 
+
+    [X] Spring Boot Starter Parent (3.3.5) 
+
+Required Dependencies: 
+
+    [X] Spring Boot Web/WebFlux (WebFlux for reactive programming) 
+
+    [X] Spring Boot Actuator 
+
+    [X] Jackson JSON Processing 
+
+    [X] Lombok (version 1.18.36) 
+
+    [X] Micrometer/Prometheus 
+
+    [X] Springdoc OpenAPI (version 2.1.0) + SpringFox Swagger 
+
+    [X] JWT Libraries (Auth0 JWT version 3.18.2) 
+
+    [X] Other: Google Cloud PubSub, Spring Cloud GCP, Undertow, WireMock 
+
+ 
+
+1.1.2 Package Structure Requirements 
+
+Base Package: [X] com.company.usersysapi 
+
+Controller Package: [X] com.company.usersysapi.controller 
+
+Service Package: [X] com.company.usersysapi.service 
+
+Model/DTO Package: [X] com.company.usersysapi.dto 
+
+Configuration Package: [X] com.company.usersysapi.config 
+
+Utility Package: [X] com.company.usersysapi.util 
+
+Exception Package: [X] com.company.usersysapi.exception 
+
+ 
+
+1.2 API ENDPOINT ARCHITECTURE 
+
+1.2.1 Base API Configuration 
+
+Context Path: /user-sys-api 
+
+ 
+
+Base API Versioning: /api/v1 
+
+Pagination implementation where applicable 
+
+M – Mandatory, O - Optional  
+
+Core Endpoints: 
+
+POST /api/v1/users - Create a new user 
+
+POST /api/v1/users — Create a new user 
+
+Security: users:write 
+Required headers: 
+
+Authorization: Bearer <token> 
+
+Content-Type: application/json; charset=utf-8 
+
+traceparent: <generated or propagated> 
+Optional headers: 
+
+tracestate: <vendor-data> 
+
+Idempotency-Key: <uuid> (prevents duplicate creates on retries) 
+
+Request body 
+
+JSON 
+
+{ 
+
+"email": "jane.doe@example.com", (M) 
+
+"phone": "+1-555-0100", (M) 
+
+"firstName": "Jane", (M) 
+
+"lastName": "Doe", (M) 
+
+"address": "" (O)  
+
+} 
+
+Sample request (curl) 
+
+Shell 
+
+curl -X POST "https://api.example.com/user-sys-api/api/v1/users" \ 
+
+-H "Authorization: Bearer <token>" \ 
+
+-H "Content-Type: application/json" \ 
+
+-H "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" \ 
+
+-H "Idempotency-Key: 0d1c7f7e-6b0f-4c0a-8d6c-2dd7a3c5a111" \ 
+
+-d '{"email":"jane.doe@example.com","phone":"+1-555-0100","firstName":"Jane","lastName":"Doe"}' 
+
+Responses 
+
+201 Created 
+Headers: 
+
+Location: /user-sys-api/api/v1/users/usr_123 
+
+ETag: "v1" 
+Body: 
+
+JSON 
+
+{ 
+
+"id": "usr_123", 
+
+"email": "jane.doe@example.com", 
+
+"status": "ACTIVE", 
+
+"createdAt": "2025-09-05T08:07:00Z", 
+
+"updatedAt": "2025-09-05T08:07:00Z", 
+
+"version": 1 
+
+} 
+
+202 Accepted (rare; if creation is async) 
+
+Errors: 400 (validation), 401, 403 (scope), 409 (duplicate email), 422, 429, 500 
+
+Notes 
+
+Use Idempotency-Key to make repeated POSTs safe. 
+
+Emit user.created event (include traceId). 
+
+ 
+
+ 
+
+GET /api/v1/users/{id} - Retrieve user by ID 
+
+GET /api/v1/users/{id} — Retrieve user by ID 
+
+Security: users:read 
+Required headers: 
+
+Authorization: Bearer <token> 
+
+Accept: application/json 
+
+traceparent 
+Optional headers: 
+
+tracestate 
+
+If-None-Match: <etag> (conditional GET) 
+
+Path params: 
+
+id (format usr_*) 
+
+Responses 
+
+200 OK 
+Headers: ETag: "v1" 
+Body (User) 
+
+304 Not Modified if If-None-Match hits 
+
+Errors: 401, 403 (scope), 404, 429 
+
+Notes 
+
+Use ETag for client caching and bandwidth savings. 
+
+ 
+
+ 
+
+GET /api/v1/users - List all users 
+
+GET /api/v1/users — List all users 
+
+Security: users:read 
+Required headers: 
+
+Authorization 
+
+Accept 
+
+traceparent 
+
+Query params 
+
+cursor (string; for pagination) 
+
+limit (int; default 20, max 100) 
+
+email (optional filter) 
+
+status (optional filter) 
+
+Sample request 
+
+Shell 
+
+curl -s "https://api.example.com/user-sys-api/api/v1/users?limit=20" \ 
+
+-H "Authorization: Bearer <token>" -H "Accept: application/json" 
+
+Response 200 Headers: 
+
+Link: <https://api.example.com/user-sys-api/api/v1/users?cursor=eyJwYWdlIjoyfQ>; rel="next" 
+
+X-Total-Count: 158 
+
+Body: 
+
+JSON 
+
+{ 
+
+"data": [ 
+
+{"id":"usr_123","email":"jane.doe@example.com"}, 
+
+{"id":"usr_124","email":"john.smith@example.com"} 
+
+], 
+
+"nextCursor": "eyJwYWdlIjoyfQ" 
+
+} 
+
+Errors: 401, 403, 429 
+
+Notes 
+
+Use RFC 8288 Link header with rel="next" for pagination. 
+
+Prefer cursor-based paging for stability. 
+
+ 
+
+PUT /api/v1/users/{id} - Update user details 
+
+       Security: users:write 
+Required headers: 
+
+Authorization 
+
+Content-Type: application/json 
+
+traceparent 
+Optional headers: 
+
+tracestate 
+
+If-Match: <etag or version> (recommended for optimistic concurrency) 
+
+Path params: id (usr_*) 
+
+Request body (send fields to update; use PATCH if you prefer partial semantics) 
+
+JSON 
+
+{ 
+
+"email": "jane.doe@example.com", 
+
+"phone": "+1-555-0101", 
+
+"firstName": "Janet", 
+
+"lastName": "Doe" 
+
+} 
+
+ 
+
+Sample request 
+
+Shell 
+
+curl -X PUT "https://api.example.com/user-sys-api/api/v1/users/usr_123" \ 
+
+-H "Authorization: Bearer <token>" \ 
+
+-H "Content-Type: application/json" \ 
+
+-H 'If-Match: "v1"' \ 
+
+-d '{"phone":"+1-555-0101","firstName":"Janet"}' 
+
+ 
+
+Responses 
+
+200 OK 
+Headers: ETag: "v2" 
+Body: 
+
+JSON 
+
+{ "id": "usr_123", "phone": "+1-555-0101", "firstName": "Janet", "version": 2 } 
+
+204 No Content (if the service chooses not to return a body) 
+
+Errors: 400, 401, 403, 404, 409 (etag/version mismatch), 422 
+
+Notes 
+
+Idempotent: resending the same PUT with the same state yields the same result. 
+
+Use If-Match to avoid lost updates. 
+
+        
+
+ 
+
+DELETE /api/v1/users/{id} - Delete user 
+
+  Security: users:delete 
+Required headers: 
+
+Authorization 
+
+traceparent 
+Optional headers: 
+
+tracestate 
+
+Path params: id (usr_*) 
+
+Response 
+
+204 No Content (success) 
+
+202 Accepted (if asynchronous) 
+
+Errors: 401, 403, 404 
+
+Notes 
+
+Ensure referential integrity. 
+
+Emit user.deleted event (include traceId). 
+
+ 
+
+ 
+
+ 
+
+API Version Strategy: 
+
+    [X] URL Path Versioning (/api/v1) 
+
+Base Controller Pattern: 
+
+    [X] RestController with ResponseEntity 
+
+    [X] Reactive WebFlux (Mono/Flux) 
+
+ 
+
+Endpoint Categories Required: 
+
+    [X] Proxy endpoints (/**) 
+
+    [X] Health/Actuator endpoints (/actuator/**) 
+
+ 
+
+1.2.2 HTTP Method Usage 
+
+    [X] GET (for data retrieval) 
+
+    [X] POST (for data creation/proxy) 
+
+    [X] PUT (for updates) 
+
+    [X] DELETE (for deletions) 
+
+    [X] PATCH (for partial updates) 
+
+ 
+
+1.2.3 Core Endpoints 
+
+Universal Proxy Pattern (/api/**) 
+
+Method - All 5 HTTP methods (GET, POST, PUT, PATCH, DELETE) 
+
+Routing - Dynamic path routing to Users APIs 
+
+Header -Comprehensive header management 
+
+ 
+
+Other - Request/response transformation. Trace-Id, JWT, Acting-as headers, Feature flags 
+
+ 
+
+Event Emitter System (/api/emitter/v1/batch) 
+
+Method - Bulk PubSub message emission 
+
+Batch size - 1-1000 messages per batch) 
+
+Routing - Topic-based routing 
+
+Other - Async processing capabilities 
+
+ 
+
+1.2.4 Security Specifications: 
+
+JWT authentication schemes 
+
+Technical user authentication 
+
+Acting as functionality for user impersonation 
+
+Comprehensive authorization patterns 
+
+ 
+
+1.2.5 Request/Response Models:  
+
+Generic ResponseDataWrapper<T>, BulkEmitRequest 
+
+ 
+1.2.6 Error Handling:  
+
+Detailed error schemas with field-level validation 
+
+ 
+
+1.2.7 Validation  
+
+Parameter validation with regex patterns 
+
+ 
+
+1.2.8 Documentation 
+
+Swagger UI integration 
+
+ 
+
+1.2.9 Other 
+
+Proper HTTP status code mapping 
+
+Distributed tracing support 
+
+Feature flag management 
+
+ 
+
+ 
+
+ 
+
+ 
+ 
+
+SEGMENT II: BUSINESS LOGIC & INTEGRATION SPECIFICATION 
+
+========================================================================= 
+
+ 
+
+This segment defines the business-specific functionality, external integrations, data transformation logic, and workflow orchestration that implements the core business requirements. 
+
+ 
+
+2.1 EXTERNAL SYSTEM INTEGRATIONS 
+
+ 
+
+2.1.1 Primary Integrations 
+
+Target System 1: [X] PostgreSQL Database 
+
+Integration Type: [X] JDBC via Spring Data JPA 
+
+Authentication: [X] DB credentials via secrets 
+
+Data Format: [X] Relational 
+
+Timeout: 30 seconds 
+
+Retry Strategy: [X] Simple retry (2 attempts) 
+
+ 
+
+ 
+
+Target System 2: [X] Redis Cache 
+
+Integration Type: [X] Spring Data Redis (Lettuce client) 
+
+Authentication: [X] Redis credentials via secrets 
+
+Data Format: [X] Key-Value (String, Hash, List, Set, Sorted Set) 
+
+Timeout: 5 seconds 
+
+Retry Strategy: [X] Exponential backoff (3 attempts) 
+
+ 
+
+2.1.2 Circuit Breaker Implementation 
+
+    [X] Resilience4j 
+
+Circuit Breaker Configuration: 
+
+    Failure Threshold: [X] 50% 
+
+    Minimum Requests: [X] 10 
+
+    Wait Duration: [X] 30 seconds 
+
+    Sliding Window: [X] Count-based (20 calls) 
+
+ 
+
+ 
+
+ 
+
+2.2 DATA TRANSFORMATION & VALIDATION 
+
+ 
+
+2.2.1 Request/Response Transformation 
+
+Input Validation Framework: 
+
+    [X] Bean Validation (JSR-303/JSR-380) 
+
+    [X] Manual validation in service layer 
+
+ 
+
+Data Mapping Strategy: 
+
+    [X] Manual mapping with builder pattern 
+
+    [X] Direct proxy (pass-through) 
+
+ 
+
+2.2.2 Business Validation Rules 
+
+User Data Validation: 
+
+    [X] User ID format validation 
+
+    [X] Email format validation 
+
+    [X] Phone number format validation 
+
+    [X] Required field validation 
+
+Request Sanitization: 
+
+    [X] HTML encoding 
+
+    [X] SQL injection prevention 
+
+    [X] XSS prevention 
+
+    [X] Input length validation 
+
+ 
+
+2.3 WORKFLOW ORCHESTRATION 
+
+ 
+
+2.3.1 Business Process Flow 
+
+Primary Workflow: [X] User Data Proxy Service 
+
+Step 1: [X] Receive user request 
+
+Step 2: [X] Validate request format 
+
+Step 3: [X] Forward to downstream system 
+
+Step 4: [X] Transform response if needed 
+
+Step 5: [X] Return response to client 
+
+ 
+
+Error Handling Workflow: 
+
+Step 1: [X] Capture exception 
+
+Step 2: [X] Log error details 
+
+Step 3: [X] Transform to standard error format 
+
+Step 4: [X] Return appropriate HTTP status 
+
+ 
+
+2.3.2 Asynchronous Processing 
+
+    [X] Reactive Programming (WebFlux) 
+
+    [X] Message Queue processing 
+
+2.4 CONFIGURATION MANAGEMENT 
+
+ 
+
+2.4.1 Environment-Specific Configuration 
+
+Configuration Source: 
+
+    [X] application.properties/yml files 
+
+    [X] Google Cloud Configuration 
+
+ 
+
+Environment Profiles: 
+
+    [X] local 
+
+    [X] dev 
+
+    [X] ci 
+
+    [X] qa 
+
+    [X] uat 
+
+    [X] perf (with regional variants) 
+
+    [X] pilot-prod 
+
+    [X] prod (with regional variants: central1, east4) 
+
+ 
+
+2.4.2 Feature Flags 
+
+    [X] Custom configuration properties 
+
+ 
+
+2.5 DEPLOYMENT & INFRASTRUCTURE 
+
+ 
+
+2.5.1 Containerization 
+
+    [X] Docker 
+
+Container Configuration: 
+
+    Base Image: [X] openjdk:21-jdk-slim 
+
+    Port Exposure: [X] 8080 
+
+    Health Check: [X] /actuator/health 
+
+    Memory Limit: [X] 1Gi 
+
+    CPU Limit: [X] 500m 
+
+ 
+
+2.5.2 Orchestration Platform 
+
+    [X] Kubernetes 
+
+Kubernetes Resources: 
+
+    [X] Deployment 
+
+    [X] Service (ClusterIP) 
+
+    [X] ConfigMap 
+
+    [X] Secret 
+
+    [X] HorizontalPodAutoscaler 
+
+ 
+
+2.5.3 Cloud Platform 
+
+    [X] Google Cloud Platform 
+
+GCP Services Used: 
+
+    [X] Google Kubernetes Engine (GKE) 
+
+    [X] Google Pub/Sub 
+
+    [X] Google Cloud Build 
+
+    [X] Google Cloud Monitoring 
+
+    [X] Google Cloud Logging 
+
+2.6 PERFORMANCE & SCALABILITY 
+
+ 
+
+2.6.1 Performance Requirements 
+
+Response Time SLA: 
+
+    GET endpoints: [X] < 200ms (95th percentile) 
+
+    POST endpoints: [X] < 500ms (95th percentile) 
+
+    PUT/PATCH endpoints: [X] < 300ms (95th percentile) 
+
+    DELETE endpoints: [X] < 200ms (95th percentile) 
+
+ 
+
+Throughput Requirements: 
+
+    Peak TPS: [X] 1000 requests/second 
+
+    Sustained TPS: [X] 500 requests/second 
+
+    Concurrent Users: [X] 2000 
+
+ 
+
+2.6.2 Scalability Strategy 
+
+    [X] Horizontal Pod Autoscaling 
+
+    [X] Cluster autoscaling 
+
+ 
+
+Scaling Metrics: 
+
+    [X] CPU utilization (80% threshold) 
+
+    [X] Memory utilization (70% threshold) 
+
+    [X] Request rate 
+
+ 
+
+2.6.3 Caching Strategy 
+
+    [X] Redis Cache 
+
+ 
+
+ 
