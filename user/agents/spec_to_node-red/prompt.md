@@ -3,41 +3,47 @@
 
 You will generate a complete, importable Node‑RED implementation for the provided TECH_DOC.
 
-## DELIVERABLE
-Return only the following file:
-
+## DELIVERABLES
+Return the following files:
 - `flows.json` — Node‑RED 3.x+ flow format
+- `package.json` — must list all required contrib nodes with pinned versions
+
+## WHY IMPORT ERRORS OCCUR
+Node-RED will reject flows.json if it contains node types like `redis out`, `postgressql` that:
+- Are incorrectly named
+- Are not supported by any installed contrib module
+- Are missing from package.json
+
+## REQUIRED MODULES
+Ensure package.json includes:
+- `node-red-contrib-jwt`
+- `node-red-contrib-redis`
+- `node-red-contrib-object-validation`
+- `node-red-contrib-postgresql`
+
+If generating any other modules, ensure they are not dependent on ajv
 
 ## OUTPUT FORMAT (STRICT)
-Return the file as a **pure JSON array**:
-
+Return `flows.json` as a **pure JSON array**:
 [
   ... all flow objects ...
 ]
 
-Do **not** wrap the flows in an object with `version` or `flows` keys.
-Do **not** include any Markdown fencing like ```json or ```.
-Do **not** include any commentary, explanations, or additional files.
+Do **not** wrap the flows in an object with `version` or `flows` keys
+Do **not** include any Markdown fencing like ```json or ```
+Do **not** include any commentary, explanations, or additional files
 
 ## IMPLEMENTATION REQUIREMENTS
 Implement all endpoints and behaviors specified in the TECH_DOC:
-
-- POST /api/v1/users → Create user (with Redis idempotency, PostgreSQL insert, ETag)
-- GET /api/v1/users/{id} → Retrieve user (with Redis cache, ETag, If-None-Match)
-- GET /api/v1/users → List users (with pagination, filters, Link header, X-Total-Count)
-- PUT /api/v1/users/{id} → Update user (with If-Match, version bump, cache invalidation)
-- DELETE /api/v1/users/{id} → Delete user (with cache invalidation)
-- POST /api/emitter/v1/batch → Emit events to Redis channel `${EMIT_CHANNEL}`
-- GET /healthz and /readyz → Health and readiness endpoints
-- Universal proxy for `/api/**` → Forward to `${DOWNSTREAM_BASE_URL}`
-- Global catch node → Normalized error envelope
-
-## NODE TYPES
-Use only the following contrib nodes:
-- `jwt verify` from `node-red-contrib-jwt`
-- `redis-config`, `redis-command` from `node-red-contrib-redis`
-- AJV validator from `@gregoriusrippenstein/node-red-contrib-validation-and-documentation`
-- `postgresql` from `node-red-contrib-postgresql`
+- POST /api/v1/users → Create user
+- GET /api/v1/users/{id} → Retrieve user
+- GET /api/v1/users → List users
+- PUT /api/v1/users/{id} → Update user
+- DELETE /api/v1/users/{id} → Delete user
+- POST /api/emitter/v1/batch → Emit events
+- GET /healthz and /readyz → Health endpoints
+- Universal proxy for `/api/**`
+- Global catch node → normalized error envelope
 
 ## ENVIRONMENT VARIABLES
 Use `${VAR}` substitution for:
@@ -49,13 +55,6 @@ Use `${VAR}` substitution for:
 - EMIT_CHANNEL
 - PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, PGSSL
 - PORT (optional)
-
-## VALIDATION
-- AJV validation for body, path, query, headers
-- Enforce Idempotency-Key on POST
-- Enforce If-Match on PUT
-- Enforce If-None-Match on GET
-- Sanitize inputs (trim, strip control chars)
 
 ## DATABASE
 - Use parameterized SQL only (`msg.query` + `msg.params`)
