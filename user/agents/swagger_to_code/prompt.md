@@ -1,39 +1,40 @@
-Given a detailed OpenAPI 3.0 YAML specification for a customer data management API, generate a complete, production-ready, cloud-native Java application that meets the following requirements:
+Given a detailed OpenAPI 3.0 YAML specification and Node-red flows json for user management APIs, generate a complete, production-ready, cloud-native Java application for all flows that meets the following requirements:
 
 **Selected Technology and Configuration (all are mandatory):**
 - **Java Version:** 21
 - **Spring Boot Version:** 3.3.5
 - **Build Tool:** Maven
 - **Target Environment:** Google Cloud Platform (Multi-region)
-- **Base Package:** `com.demo.customer`
+- **Base Package:** `com.demo.user`
 - **API Version:** v1
 - **Production Ready Version:** 1.0.151
 
 **Output Format:**
 - Output the entire application as a single JSON object.
-- Each key in the JSON object must be the relative file path (e.g., "src/main/java/com/demo/customer/controller/v1/CustomersysController.java").
+- Each key in the JSON object must be the relative file path (e.g., "src/main/java/com/demo/user/controller/v1/UsersysController.java").
 - Each value must be the complete content of that file as a string.
 - Do not include any extra text, explanations, or markdown—only the JSON object.
 - **MUST generate every file and implement every requirement described in all points below.**
+- **Must implement all flows end to end from Node-Red flows json file, override the openapi spec file if needed accordingly**
 - **MUST include all top-level files such as .gitignore and pom.xml in the output.**
 - Example:
   {
-    "src/main/java/com/demo/customer/controller/v1/CustomersysController.java": "package com.demo.customer.controller.v1;\n// ...rest of the code...",
+    "src/main/java/com/demo/user/controller/v1/UsersysController.java": "package com.demo.user.controller.v1;\n// ...rest of the code...",
     "pom.xml": "<project>...</project>",
     "docker/Dockerfile": "FROM openjdk:21-jdk-slim\n..."
   }
 
 **Project Structure:**
-- All Java source code must be organized under `src/main/java/com/demo/customer/` as follows:
+- All Java source code must be organized under `src/main/java/com/demo/user/` as follows:
   - `model/v1/` – Domain entities (versioned)
+  - `dto/v1/` – Domain entities (versioned)
   - `repository/` – Repository interfaces
   - `service/v1/` – Business logic and use cases (versioned)
   - `config/` – Configuration classes
-  - `messaging/` – Event publishing/subscription
   - `controller/v1/` – REST controllers (versioned)
   - `exception/v1/` – Error handling (versioned)
   - `common/` – Shared utilities
-  - `utils/` – Utility classes (e.g., JwtUtils, PubSubUtils, etc.)
+  - `utils/` – Utility classes (e.g., JwtUtils etc.)
   - `MainApplication.java` – Main entry point
 
 - All resource/configuration files must be under `src/main/resources/` (Mandatory):
@@ -73,7 +74,7 @@ Given a detailed OpenAPI 3.0 YAML specification for a customer data management A
 
 3. **General Requirements:**
   - The application must be enterprise-grade, reactive, and highly observable.
-  - It should support customer data management and integration with external systems (e.g., Salesforce CRM, Customer Process API, Google Pub/Sub).
+  - It should support user data management and integration with external systems (e.g., Postgres).
   - If endpoint logic is not specified, infer and implement logic based on the endpoint summary.
   - Every requirement below must be strictly followed.
 
@@ -83,7 +84,6 @@ Given a detailed OpenAPI 3.0 YAML specification for a customer data management A
   - Maven
   - Spring WebFlux (Reactive)
   - Spring Security (JWT/OAuth2, RSA256, Auth0 JWT 3.18.2)
-  - Google Cloud Pub/Sub integration (Spring Cloud GCP)
   - PostgreSQL (R2DBC optional)
   - Docker & Docker Compose
   - Kubernetes (Deployment, Service, ConfigMap, Secret, HPA)
@@ -97,16 +97,15 @@ Given a detailed OpenAPI 3.0 YAML specification for a customer data management A
 
 5. **Project Structure:**
   - **Strictly follow the project hierarchy described above.**
-  - Organize code under src/main/java/com/demo/customer/ as follows:
+  - Organize code under src/main/java/com/demo/user/ as follows:
     - model/v1 – Domain entities
     - repository/ – Repository interfaces
     - service/v1 – Business logic and use cases
     - config/ – Configuration classes
-    - messaging/ – Event publishing/subscription
     - controller/v1 – REST controllers
     - exception/v1 – Error handling
     - common/ – Shared utilities
-    - - `utils/` – Utility classes (e.g., JwtUtils, PubSubUtils, etc.)
+    - utils/ – Utility classes (e.g., JwtUtils, DbUtils, etc.)
     - MainApplication.java – Main entry point
     - pom.xml - configuration file at the top level of the repository
     - k8s-manifests/ - Organize deployment yamls at the top level of the repository
@@ -118,18 +117,18 @@ Given a detailed OpenAPI 3.0 YAML specification for a customer data management A
     - formatter/codeStyles/ - place it at the top level of the repository for code style configuration (Google Java Style via formatter plugin). Also add required dependencies in pom.xml.
 
 6. **Controller & Service Versioning:**
-  - Place versioned controllers in controller/v1/ (e.g., CustomersysController.java).
-  - Place versioned services in service/v1/ (e.g., CustomersysService.java, EmitterService.java, SalesforceService.java).
+  - Place versioned controllers in controller/v1/ (e.g., UsersysController.java).
+  - Place versioned services in service/v1/ (e.g., UsersysService.java).
   - Unversioned controllers/services (e.g., MainController, MainService) remain in their respective root folders.
   - EmitterController/EmitterService can be versioned or unversioned as needed.
   - Versioning is managed via URI path (e.g., /api/v1/).
   - Endpoints must support distributed tracing, JWT authentication, impersonation, feature flags, and standardized error responses.
 
 7. **Configuration & Deployment:**
-  - Provide docker-compose.yml for local infrastructure (Postgres, Pub/Sub emulator, Prometheus, Grafana).
+  - Provide docker-compose.yml for local infrastructure (Postgres, Prometheus, Grafana).
   - Include a Dockerfile for the application (Base: openjdk:21-jdk-slim, Port: 8080, Health: /actuator/health, Memory: 1Gi, CPU: 500m).
   - Use Maven plugins for code formatting, coverage, and packaging.
-  - Provide Kubernetes manifests for cloud deployment - Generate a customer-sys-api-api-deployment.yaml for customer-sys-api-api image
+  - Provide Kubernetes manifests for cloud deployment - Generate a user-sys-api-api-deployment.yaml for user-sys-api-api image
 
 8. **Key Features:**
   - Reactive REST API for all endpoints, headers, resource model, response code as listed in input swagger yaml, strictly follow implementation required for endpoints based on summary & description. Provide actual logic for all endpoints, services, and integrations.
@@ -140,12 +139,10 @@ Given a detailed OpenAPI 3.0 YAML specification for a customer data management A
     d. Use @RequestHeader and ensure null-safe handling of optional and default headers for all parameters with in as header and details mentioned in input swagger.
     f. Use reactive programming with Project Reactor (Mono, Flux).
   - Place versioned services in service/v1/ 
-  - Place versioned models in model/v1/ (eg: BulkEmitRequest, Customer, SalesforceData)
+  - Place versioned models in model/v1/ (eg: User)
   - Create required models - Domain entities, event – Domain events in model/ folder
-  - SalesforceService: Use Spring WebFlux/WebClient, JWT authentication, and configuration properties. Implement service and utility classes (e.g., SalesforceService, JwtUtils). 
-  - Generate a SalesforceService which sets up a SalesforceService class in Java using Spring, WebClient, and Reactor Netty for efficient HTTP communication and implements methods for forwardRequest, getAccessTokenFromSalesforce, authAndSendRequestToSalesforce, sendRequestToSalesforce.
-  - Google Cloud Pub/Sub: Use PubSubTemplate/Publisher, utility classes for topic management and batching (e.g., PubSubService, PubSubUtils). 	
-  - Generate a Spring Boot service class named PubSubService that publishes messages to Google Cloud Pub/Sub. It should support both single message publishing using PubSubTemplate and batch publishing using the native Publisher API.
+  - UserService: Use JWT authentication. Implement service and utility classes (e.g., UserService, JwtUtils). 
+  - Generate a UserService which sets up a SUserService class in Java using Spring implements methods for user CRUD operations.
   - Comprehensive JSON logging (GCP compatible, fields: Timestamp, Log Level, Thread Name, Logger Name, Message, Correlation ID/Trace ID, User ID, Request ID).
   - Prometheus metrics and health endpoints via Spring Boot Actuator.
   - Code style enforcement (Google Java Style via formatter plugin). Also add required dependencies in pom.xml.
@@ -165,8 +162,7 @@ Given a detailed OpenAPI 3.0 YAML specification for a customer data management A
     d. Use @RequestHeader and ensure null-safe handling of optional and default headers for all parameters with in as header and details mentioned in input swagger.
     f. Use reactive programming with Project Reactor (Mono, Flux).
   - Create required models - Domain entities, event – Domain events in model/ folder
-  - SalesforceService: Use Spring WebFlux/WebClient, JWT authentication, and configuration properties. Implement service and utility classes (e.g., SalesforceService, JwtUtils). Generate a SalesforceService which sets up a SalesforceService class in Java using Spring, WebClient, and Reactor Netty for efficient HTTP communication and implements methods for forwardRequest, getAccessTokenFromSalesforce, authAndSendRequestToSalesforce, sendRequestToSalesforce.
-  - Google Cloud Pub/Sub: Use PubSubTemplate/Publisher, utility classes for topic management and batching (e.g., PubSubService, PubSubUtils). 	Generate a Spring Boot service class named PubSubService that publishes messages to Google Cloud Pub/Sub. It should support both single message publishing using PubSubTemplate and batch publishing using the native Publisher API.
+  - UserService: Use JWT authentication. Implement service and utility classes (e.g., UserService, JwtUtils). Generate a SalesforceService which sets up a UserService class in Java using Spring and implements crud operations for user.
   - Add monitoring, metrics, and alerting configuration.
   - Generate OpenAPI documentation.
   - Provide a README with setup, usage, and architecture overview.
@@ -179,15 +175,13 @@ Given a detailed OpenAPI 3.0 YAML specification for a customer data management A
 
 11. **Example API Endpoints:**
   - Unversioned: /api/** (MainController, all HTTP methods)
-  - Versioned: /api/v1/** (CustomersysController, all HTTP methods)
+  - Versioned: /api/v1/** (UsersysController, all HTTP methods)
   - Health: /actuator/health
   - Metrics: /actuator/prometheus
-  - Event emission: /api/emitter/v1/batch and other /api/emitter/v1/* endpoints
 
 12. **Integration Requirements:**
-  - Salesforce: Use Spring WebFlux/WebClient, JWT authentication, and configuration properties. Implement service and utility classes (e.g., SalesforceService, JwtUtils).
-  - Customer Process API: REST API, API Key, JSON, 15s timeout, simple retry 2 attempts.
-  - Google Cloud Pub/Sub: Use PubSubTemplate/Publisher, utility classes for topic management and batching (e.g., PubSubService, PubSubUtils).
+  - Postgres: Use Postgres for all db related implementations for all apis
+  - User API: REST API, API Key, JSON, 15s timeout, simple retry 2 attempts.
   - JWT Authentication: Provide utilities for token generation/decoding, private key management, and claims extraction.
   - Distributed Tracing: Add a WebFilter to extract Trace-Id and propagate via MDC for logging/tracing.
   - Custom Logging: Configure Logback for JSON logging and MDC context propagation.
