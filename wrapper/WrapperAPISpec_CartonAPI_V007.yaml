@@ -1,0 +1,163 @@
+openapi: 3.0.0
+info:
+  title: Macy's Direct-to-Store Carton Status API
+  version: v1
+  description: A RESTful API to retrieve carton status information for direct-to-store operations.  This API wraps a legacy SOAP service (XEDIE010).
+servers:
+  - url: /v1/directToStore/carton/{UCCID}
+    description: Production Server
+paths:
+  /v1/directToStore/carton/{UCCID}:
+    get:
+      summary: Retrieve Carton Status
+      description: Retrieves the status of a carton based on its UCC ID.
+      parameters:
+        - in: path
+          name: UCCID
+          schema:
+            type: string
+          required: true
+          description: The Universal Product Code (UPC) identifier for the carton.
+        - in: header
+          name: X-Client-Id
+          schema:
+            type: string
+          required: true
+          description: Identifier for the calling application.
+        - in: header
+          name: X-Client-Secret
+          schema:
+            type: string
+          required: true
+          description: Secret for authenticating the calling application.
+        - in: header
+          name: X-Message-Id
+          schema:
+            type: string
+          required: true
+          description: Unique identifier for request tracing and idempotency.
+        - in: header
+          name: location
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: Store location identifier
+        - in: header
+          name: colleagueId
+          schema:
+            type: string
+          required: true
+          description: Employee/Associate ID
+        - in: header
+          name: applicationId
+          schema:
+            type: string
+          required: true
+          description: Application identifier
+        - in: header
+          name: division
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 99999999
+          required: true
+          description: Division number (0-99999999)
+        - in: header
+          name: store
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 99999999
+          required: true
+          description: Store number (0-99999999)
+        - in: header
+          name: device_id
+          schema:
+            type: string
+          required: true
+          description: Device identifier
+        - in: header
+          name: device_type
+          schema:
+            type: string
+          required: true
+          description: Device type
+        - in: header
+          name: traceId
+          schema:
+            type: string
+          description: Request tracing identifier (optional)
+        - in: header
+          name: MockResponse
+          schema:
+            type: string
+          description: Testing/mock response flag (optional)
+
+      responses:
+        '200':
+          description: Successful carton status retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartonDetailResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Carton not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CartonDetailResponse:
+      type: object
+      properties:
+        returnCode:
+          type: integer
+          format: int32
+        returnMessage:
+          type: string
+        cartonNumber:
+          type: string
+        nafship:
+          type: integer
+          format: int64
+        bolstatus:
+          type: string
+        bol:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        message:
+          type: string
+

@@ -1,0 +1,142 @@
+# Enterprise API Generation Prompt for Gemini 1.5 Flash
+
+**Objective**: Generate a complete, production-ready, cloud-native Spring Boot application based on a detailed technical specification (`*.md` or similar) and an OpenAPI 3.0 specification (`*.yaml`). The generated code must be enterprise-grade, fully compliant with all specified requirements, and delivered as a single JSON object containing all project files.
+
+---
+## 1. Core Inputs
+
+You will be provided with two primary documents:
+1.  **Technical Specification (`.md` file):** This is the **primary source of truth**. It contains detailed requirements for every aspect of the project. You must parse this document to find all specifications, including but not limited to:
+    *   Architecture, Technology Stack, and specific library Versions
+    *   Project Structure, Base Package Name, and File Paths
+    *   Security (Authentication, Authorization, Secret Management, mTLS)
+    *   Resilience Patterns (Circuit Breakers, Retries, Fallbacks)
+    *   Logging (Format, Fields), Metrics, Tracing, and Observability
+    *   Caching Strategy (Library, TTLs)
+    *   Testing Requirements (Frameworks, Coverage goals, Exclusions)
+    *   Deployment (Docker, Kubernetes manifests, CI/CD pipeline definitions)
+    *   Code Formatting and Style Guides
+2.  **OpenAPI 3.0 Specification (`.yaml` file):** This defines the public REST contract, including:
+    *   Endpoints, HTTP Methods, and Paths
+    *   Request/Response DTOs and Schemas
+    *   Parameters (Path, Header, Query)
+    *   Status Codes and Example Payloads
+
+> **Golden Rule:** If there is a conflict between the two documents, the **Technical Specification (`.md` file) always overrides** the OpenAPI spec. If a requirement is missing from both, implement a sensible, modern enterprise default and document it in the `README.md`. **Do not leave any placeholders or "TODO" comments.**
+
+---
+## 2. Strict Output Format
+
+Your entire response **MUST** be a single, raw JSON object.
+-   **Keys** must be the full, relative file paths (e.g., `src/main/java/com/macys/iwm/controller/v1/DirectToStoreController.java`).
+-   **Values** must be the complete file content as a string.
+-   **Do not** wrap the JSON in ```json ... ``` code fences or add any explanatory text outside the JSON structure.
+
+**Example Structure:**
+```json
+{
+  "pom.xml": "<project>...</project>",
+  "README.md": "# Project Title\n...",
+  "src/main/java/com/macys/iwm/Application.java": "package com.macys.iwm;\n...",
+  "k8s-manifests/iwm-items-list-eapi-deployment.yaml": "apiVersion: apps/v1\n..."
+}
+```
+
+---
+## 3. Core Implementation Requirements
+
+### 3.1. Project & Build
+-   **Project Name & Base Package:** Use the exact names specified in the `.md` spec.
+-   **Build Tool:** Generate a `pom.xml` (or other build file as specified) using the Java, Spring Boot, and other library versions from the `.md` spec. Include all necessary plugins for build, testing, code coverage, and code formatting as defined in the spec.
+-   **Dependency Management:** You **MUST** use the specified Spring Boot Parent POM. If the spec includes a Bill of Materials (BOM) for a dependency family (like Spring Cloud), you **MUST** add it to the `<dependencyManagement>` section.
+
+### 3.2. Architecture & Code Structure
+-   Implement the exact layered package structure defined in the `.md` spec.
+-   Implement API versioning in packages as specified in the `.md` spec.
+
+### 3.3. Controllers & Endpoints
+-   Implement all REST endpoints from the OpenAPI spec.
+-   Use the appropriate Spring MVC annotations for controllers and endpoints.
+-   Apply JSR-380 validation (`@Validated`, `@NotNull`, `@Size`, `@Min`, etc.) to all path variables, parameters, and headers as defined in the `.md` spec and OpenAPI spec.
+-   Use `@RequestHeader` to extract all required headers.
+
+### 3.4. DTOs & Models
+-   Create DTOs in the `dto` (or `model`) package as defined in the OpenAPI spec and `.md` spec.
+-   Use Lombok (`@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`) for boilerplate reduction if specified.
+
+### 3.5. Service Layer & Business Logic
+-   Create service interfaces and implementations in the `service` package.
+-   The service layer must contain the core business logic.
+-   If the API wraps a legacy service (like SOAP), the service layer orchestrates the call to a `gateway` component.
+
+### 3.6. External Integration (Gateway)
+-   If specified, create a `gateway` class to encapsulate all communication with external services (e.g., a legacy SOAP service).
+-   Use the specified client library for external integrations.
+-   Handle data transformation between the internal DTOs and the external service's format, using a mapping library like MapStruct if specified.
+
+### 3.7. Security
+-   **Secret Management:** Integrate with the specified secret manager. Create a configuration class to load secrets and make them available as Spring properties.
+-   **Authentication:** Implement the specified authentication strategy. If mTLS is required for downstream calls, configure the HTTP client accordingly.
+-   **Authorization:** Include a basic Spring Security configuration (`SecurityFilterChain`) for defense-in-depth, configured as per the `.md` spec.
+
+### 3.8. Resilience
+-   Implement resilience patterns using the specified library (e.g., **Resilience4j**).
+-   Apply `@CircuitBreaker` and `@Retry` annotations to methods in the `gateway` or `service` that call external systems.
+-   Configure thresholds, backoff policies, and fallbacks in `application.properties` based on values from the `.md` spec.
+-   Implement a fallback method that provides a default response when the circuit is open or retries are exhausted.
+
+### 3.9. Caching
+-   Implement caching at the service layer using Spring's Cache Abstraction (`@Cacheable`) if specified.
+-   Configure the specified cache manager and set appropriate TTLs from the `.md` spec.
+
+### 3.10. Logging & Observability
+-   **Structured Logging:** Configure the specified logging framework to produce **JSON-formatted logs** with the exact fields listed in the `.md` spec.
+-   **Correlation ID:** Implement a `Filter` to extract a trace ID from request headers or generate a new one. Propagate it to the `MDC` for inclusion in every log statement.
+-   **Metrics:** Configure **Micrometer** and Spring Boot Actuator to expose metrics via the specified endpoint.
+-   **Tracing:** Include dependencies for the specified tracing library to enable distributed tracing.
+-   **Configuration Files:** If the spec requires specific logging configuration files (e.g., `logback.xml`), generate them with the correct syntax and providers for the chosen logging framework.
+-   **Health Checks:** Expose `/actuator/health`, `/actuator/live`, and `/actuator/ready` endpoints. Implement any custom health indicators for critical downstream dependencies as required by the `.md` spec.
+
+### 3.11. Exception Handling
+-   Create a global exception handler using `@RestControllerAdvice`.
+-   Define custom exception classes in the `exception` package as specified.
+-   The global handler must catch these exceptions and return a standardized JSON error response as defined in the `.md` spec.
+
+### 3.12. Testing
+-   **Unit Tests (JUnit 5 & Mockito):** Test individual classes (services, mappers) in isolation.
+-   **Integration Tests (Spring Boot Test):** Test the interaction between layers.
+-   **Controller/API Tests:** Write tests for the controller layer, using the specified frameworks to mock any downstream services as required.
+-   **Code Coverage:** Configure **JaCoCo** to enforce the code coverage target specified in the `.md` spec, respecting any specified package exclusions.
+-   **Test Data:** Place sample payloads in the specified test resources directory.
+
+### 3.13. Documentation
+-   **OpenAPI UI:** Configure the specified library (e.g., SpringDoc) to generate an interactive API documentation UI based on the provided OpenAPI `.yaml` spec and controller annotations.
+-   **README.md:** Generate a comprehensive `README.md` file that includes:
+    *   Project overview and business purpose.
+    *   Instructions for building and running the application locally.
+    *   Details on configuration, environment variables, and required secrets.
+    *   An overview of the architecture.
+    *   API endpoint documentation with `curl` examples.
+    *   Information on logging, metrics, and health check endpoints.
+
+### 3.14. Deployment
+-   **Dockerfile:** Create a multi-stage `Dockerfile` as specified, that builds the application and creates a minimal, secure runtime image.
+-   **Kubernetes Manifests:** Generate all specified Kubernetes YAML files in the specified directory. The manifests must be production-ready, with resource requests/limits, probes, and environment variable mappings from ConfigMaps and Secrets as defined in the `.md` spec.
+-   **CI/CD:** Generate a pipeline definition file with stages for build, test, code analysis, containerization, and deployment, if specified.
+-   **Local Development Profile:** Generate an `application-local.properties` (or `.yaml`) file. In this file, disable auto-configuration for external services like GCP, Redis, or message queues that are not available locally to ensure the application can start without errors. For example, use `spring.cloud.gcp.secretmanager.enabled=false`.
+
+---
+## 4. Final Checklist
+
+Before generating the JSON, ensure your output will satisfy these final checks:
+-   Is the output a single, raw JSON object?
+-   Are all file paths correct and relative to the project root?
+-   Does the `pom.xml` contain all necessary dependencies and plugins with the correct versions from the `.md` spec?
+-   Is every requirement from the `.md` spec and OpenAPI spec implemented?
+-   Is there **no placeholder code**?
+-   Are all secrets, URLs, and configurable values externalized into `application.properties` (or equivalent)?
+-   Are tests comprehensive and meet the specified coverage goal?
+-   Are all deployment artifacts (`Dockerfile`, K8s manifests) present and complete as specified?
+-   Is the `README.md` detailed and helpful?
+
+You are now ready to generate the complete application.
