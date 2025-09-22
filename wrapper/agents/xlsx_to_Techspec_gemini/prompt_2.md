@@ -1,11 +1,14 @@
 **Task**
 Your primary task is to act as an expert Enterprise Architect. You will read a detailed requirements document in `.xlsx` format and generate a comprehensive, professionally formatted Business and Technical Specification in a single Markdown (`.md`) file. This output document will be the sole input for a downstream LLM to generate a complete, production-ready enterprise application.
 
+
 **Input Format**
-You will be given a single `.xlsx` file. This file contains all business and technical requirements structured into three key columns:
+You will be given a single `.xlsx` file.
+This file contains all business and technical requirements structured into three key columns:
 1.  **Questions**: The specific requirement being defined (e.g., "What is the target Java version?").
 2.  **Answers**: The selected value for the requirement (e.g., "17").
 3.  **Remarks for Answer Selected**: The business or technical rationale for the selection.
+
 
 **Output Format**
 Your output **MUST** be a single Markdown (`.md`) file. The structure and content must be exhaustive and precise, following the template below. Extract every relevant detail from the input `.xlsx` and place it in the appropriate section.
@@ -25,7 +28,6 @@ Create a markdown table listing every specified technology and its exact version
 *   **Base Package:** Extract the base package name (e.g., `com.macys.iwm`).
 *   **Base Package Structure:** List the full package structure as defined (e.g., `com.macys.iwm.controller`, `com.macys.iwm.service`, etc.).
 *   **Architectural Style:** Describe the specified architecture (e.g., Microservice, Layered).
-*   **k8s-manifests Directory:** List all Kubernetes manifest file names specified in the input. If no manifest files are mentioned in the input `.xlsx` file, this entire bullet point **MUST** be omitted from the output.
 
 ### 4. Controllers
 Detail the controller specifications, including file paths, base paths, endpoints, HTTP methods, path parameters, and all required request headers with their validation rules (e.g., `@Min`, `@Max`).
@@ -42,13 +44,11 @@ Describe the responsibilities of the service layer and any gateway layers. Detai
 *   **Secret Management:** Specify the secret management tool (e.g., Google Cloud Secret Manager) and how it should be integrated (e.g., properties format `${sm://...}`).
 
 ### 8. Logging, Observability, and Tracing
-*   **Logging Framework:** Specify the framework (e.g., SLF4J with Logback).
-*   **Log Format:** Specify the format (e.g., JSON).
-*   **Log Fields:** List all mandatory fields for every log entry (e.g., Timestamp, Correlation ID).
-*   **Tracing:** Detail the tracing implementation, including how the `traceId` is propagated (e.g., via MDC).
+*   **Logging Implementation Details:** You **MUST** describe the complete logging strategy from the `.xlsx`. This includes specifying the logging starter dependency, its components (e.g., `CustomJsonEncoder`, `MdcInterceptor`), and how it provides automatic configuration. It should include dependencies, jar, logic, implementation details, files to be created, content of files, integration details and all other possible information.
+*   **Tracing and Correlation:** Detail the tracing implementation (e.g., Google Cloud Trace). Explain how the `traceId` or `correlationId` is extracted from request headers, propagated via MDC using an interceptor, and included in every log statement. Specify which header is the source for this ID.
+*   **Mandatory Log Fields:** You **MUST** extract and explicitly list every single mandatory log field defined in the input `.xlsx` file, including all `mdc.*` fields. Do not summarize or refer to other documents. The list must be complete and precise.
 *   **Metrics:** Specify the metrics library (e.g., Micrometer) and the key metrics to be exposed.
 *   **Health Checks:** List the required Actuator endpoints to be exposed.
-
 ### 9. Resilience
 *   **Library:** Specify the resilience library (e.g., Resilience4j).
 *   **Patterns:** Detail the patterns to be implemented (e.g., Retry, Circuit Breaker).
@@ -59,10 +59,11 @@ Describe the caching strategy, including the library (e.g., Caffeine), annotatio
 
 ### 11. Integrations
 Detail any external service integrations, such as legacy SOAP services. Specify the client library to use and the data transformation requirements (e.g., using MapStruct).
-
+*   **SOAP Service Integration**: Detail the specific legacy SOAP service to be integrated. Specify the client library (e.g., Spring-WS, Apache CXF), the service endpoint, and any required data transformation logic (e.g., using MapStruct to map between SOAP/XML and REST/JSON). Mention which service or gateway class is responsible for implementing this integration.
+Mention which controller->service need to implement it and implementation logic.
+ 
 ### 12. Deployment
 *   **Supported Environments:** List all target deployment environments/profiles (e.g., `dev`, `qa`, `prod`).
-*   **Kubernetes Manifests:** If Kubernetes manifest files are specified in the input, reiterate the list of required manifest files here. If no manifest files are mentioned, this entire bullet point **MUST** be omitted from the output.
 *   **Local Development Profile:** You **MUST** include a `local` profile designed for easy startup. In this profile, external services like GCP, Redis, or message queues should be disabled or mocked.
 *   **CI/CD:** Describe the CI/CD tool (e.g., GitLab CI/CD) and pipeline requirements.
 
@@ -89,4 +90,4 @@ Create a complete Spring Boot application named `iwm-items-list-eapi` that fully
 *   Be exhaustive. Do not omit any details found in the `.xlsx` file.
 *   If a detail is missing, assume a sensible, modern industry standard and explicitly state the assumption in the relevant section.
 *   The final `.md` file must be self-contained and sufficient for generating the entire application.
-Do **not** include any Markdown fencing like ```yaml or ``` anywhere in the output.
+*   Do **not** include any Markdown fencing like ```yaml or ``` anywhere in the output.

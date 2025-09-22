@@ -1,0 +1,28 @@
+FROM ci-artifacts.devops.fds.com:5443/docker-infrastructure/debian-openjdk21-custommacyscerts:v1.0 AS build-env
+
+ARG ARTIFACT_PATH=./logging-1.0.0*.jar
+ARG HEALTHCHECK_PATH=./HealthCheck.precompiled
+
+ENV CONFIG_FILE=''\
+    PROFILE=''\
+    ECOSYSTEM=''
+
+COPY ${ARTIFACT_PATH} /opt/logging-1.0.0.jar
+COPY ${HEALTHCHECK_PATH} /opt/HealthCheck.class
+COPY jmx-exporter/config.yaml /opt/jmx_exporter/
+
+FROM ci-artifacts.devops.fds.com/distroless/java:21
+
+COPY --from=build-env /opt/logging-1.0.0.jar /opt/logging-1.0.0.jar
+COPY --from=build-env /opt/HealthCheck.class /opt/HealthCheck.class
+COPY --from=build-env /opt/jmx_exporter /opt/jmx_exporter
+
+
+WORKDIR /opt
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-Djdk.tls.client.protocols=TLSv1.2", "-Dsun.rmi.dgc.server.gcInterval=180000", "-Dmsp.env=${ECOSYSTEM:-gcp}", "-Dspring.profiles.active=${PROFILE}", "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9091:/opt/jmx_exporter/config.yaml", "-jar", "/opt/logging-1.0.0.jar", "--spring.config.location=file:${CONFIG_FILE}/,classpath:/"]
+
+HEALTHCHECK --interval=1m --timeout=20s --retries=5 CMD java -cp /opt HealthCheck http://localhost:8080/actuator/health|| exit 1
+

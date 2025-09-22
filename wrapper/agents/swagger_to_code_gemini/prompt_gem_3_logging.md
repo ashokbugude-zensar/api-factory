@@ -11,7 +11,7 @@ You will be provided with two primary documents:
     *   Project Structure, Base Package Name, and File Paths
     *   Security (Authentication, Authorization, Secret Management, mTLS)
     *   Resilience Patterns (Circuit Breakers, Retries, Fallbacks)
-    *   Logging (Format, Fields), Metrics, Tracing, and Observability
+    *   Metrics, Tracing, and Observability
     *   Caching Strategy (Library, TTLs)
     *   Testing Requirements (Frameworks, Coverage goals, Exclusions)
     *   Deployment (Docker, CI/CD pipeline definitions)
@@ -54,11 +54,12 @@ Your entire response **MUST** be a single, raw JSON object.
 - **Top-level files and folders:**
   - `pom.xml` – The Maven project configuration file.
   - `k8s-manifests/` – If Kubernetes manifest files are specified in the `.md` spec, include this directory to contain them. Otherwise, this directory **MUST** be omitted.
-  - `docker/` – Contains the Dockerfile for the application. The specific content will be dictated by the primary technical specification.
+  - `docker/` – Docker files
   - `README.md` – The project documentation file.
   - `.gitignore` – Git ignore file
   - `formatter/codeStyles/` – Code style configuration( Eg eclipse-java-google-style.xml). Generate them
   - `MainApplication.java` – The main Spring Boot application entry point.Update fileName according to input
+  - `DockerFile` - This should have contents from input docker file
 
 
 ### 3.2. Architecture & Code Structure
@@ -101,11 +102,10 @@ Your entire response **MUST** be a single, raw JSON object.
 -   Configure the specified cache manager and set appropriate TTLs from the `.md` spec.
 
 ### 3.10. Logging & Observability
--   **Structured Logging:** Configure the specified logging framework to produce **JSON-formatted logs** with the exact fields listed in the `.md` spec.
--   **Correlation ID:** Implement a `Filter` to extract a trace ID from request headers or generate a new one. Propagate it to the `MDC` for inclusion in every log statement.
+-   **Logging implementation:**: Execute instructions from input file `prompt_logging.md`. Do not add any extra logging implementation.
+Only execute what `prompt_logging.md` specifies.
 -   **Metrics:** Configure **Micrometer** and Spring Boot Actuator to expose metrics via the specified endpoint.
 -   **Tracing:** Include dependencies for the specified tracing library to enable distributed tracing.
--   **Configuration Files:** If the spec requires specific logging configuration files (e.g., `logback.xml`), generate them with the correct syntax and providers for the chosen logging framework.
 -   **Health Checks:** Expose `/actuator/health`, `/actuator/live`, and `/actuator/ready` endpoints. Implement any custom health indicators for critical downstream dependencies as required by the `.md` spec.
 
 ### 3.11. Exception Handling
@@ -131,7 +131,7 @@ Your entire response **MUST** be a single, raw JSON object.
     *   Information on logging, metrics, and health check endpoints.
 
 ### 3.14. Deployment
--   **Dockerfile:** Create a `Dockerfile` containing same content as mentioned in the input file. Content **MUST** not change. Content **MUST** be complete.
+-   **Dockerfile:** You will be provided with a separate input file named `Dockerfile`. You **MUST** copy the content of this file verbatim into a new file named `dockerfile` in the output in the root directory. Do **NOT** generate a new Dockerfile from a base image or modify the content in any way. The provided `Dockerfile` is the absolute source of truth and overrides all other instructions.Remove all backticks from the generated file
 -   **Kubernetes Manifests:** If Kubernetes manifest files are specified in the `.md` spec, generate all of them in the specified directory. The manifests must be production-ready, with resource requests/limits, probes, and environment variable mappings from ConfigMaps and Secrets as defined in the `.md` spec. If no files are specified, this step **MUST** be skipped.
 -   **CI/CD:** Generate a pipeline definition file with stages for build, test, code analysis, containerization, and deployment, if specified.
 -   **Application Properties:** You **MUST** generate a properties file for **every single environment** listed in the input.

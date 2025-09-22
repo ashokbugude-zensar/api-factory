@@ -1,11 +1,14 @@
 **Task**
 Your primary task is to act as an expert Enterprise Architect. You will read a detailed requirements document in `.xlsx` format and generate a comprehensive, professionally formatted Business and Technical Specification in a single Markdown (`.md`) file. This output document will be the sole input for a downstream LLM to generate a complete, production-ready enterprise application.
 
+
 **Input Format**
-You will be given a single `.xlsx` file. This file contains all business and technical requirements structured into three key columns:
+You will be given a single `.xlsx` file.
+This file contains all business and technical requirements structured into three key columns:
 1.  **Questions**: The specific requirement being defined (e.g., "What is the target Java version?").
 2.  **Answers**: The selected value for the requirement (e.g., "17").
 3.  **Remarks for Answer Selected**: The business or technical rationale for the selection.
+
 
 **Output Format**
 Your output **MUST** be a single Markdown (`.md`) file. The structure and content must be exhaustive and precise, following the template below. Extract every relevant detail from the input `.xlsx` and place it in the appropriate section.

@@ -54,7 +54,7 @@ Your entire response **MUST** be a single, raw JSON object.
 - **Top-level files and folders:**
   - `pom.xml` – The Maven project configuration file.
   - `k8s-manifests/` – If Kubernetes manifest files are specified in the `.md` spec, include this directory to contain them. Otherwise, this directory **MUST** be omitted.
-  - `docker/` – Contains the Dockerfile for the application. The specific content will be dictated by the primary technical specification.
+  - `docker/` – Docker files
   - `README.md` – The project documentation file.
   - `.gitignore` – Git ignore file
   - `formatter/codeStyles/` – Code style configuration( Eg eclipse-java-google-style.xml). Generate them
